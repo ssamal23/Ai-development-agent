@@ -1,0 +1,145 @@
+.sidebar {
+  width: 240px;
+  background: #1f1f1f;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  border-right: 1px solid #333;
+}
+
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid #333;
+}
+
+.sidebar-header h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 0;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+.nav-item.active {
+  background: linear-gradient(90deg, #667eea 0%, #667eea 100%);
+  color: #ffffff;
+  border-right: 3px solid #667eea;
+}
+
+.nav-icon {
+  font-size: 18px;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-label {
+  flex: 1;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid #333;
+}
+
+.project-connections {
+  margin-bottom: 20px;
+}
+
+.project-connections h3 {
+  margin: 0 0 12px 0;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7a7a7a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.connection-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background-color: #2a2a2a;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.connected {
+  background-color: #4CAF50;
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+}
+
+.connection-item > div {
+  flex: 1;
+}
+
+.connection-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.connection-status {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: #7a7a7a;
+}
+
+.agent-ready {
+  padding: 14px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.agent-ready p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.agent-ready .small-text {
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}

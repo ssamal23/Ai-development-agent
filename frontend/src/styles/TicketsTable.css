@@ -1,0 +1,90 @@
+.tickets-table-container {
+  overflow-x: auto;
+}
+
+.tickets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tickets-table thead {
+  background-color: #f9f9f9;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tickets-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #666;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tickets-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+.tickets-table tbody tr:hover {
+  background-color: #fafafa;
+}
+
+.ticket-id {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.ticket-title {
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.state-badge {
+  background-color: #2196F3;
+}
+
+.priority-badge {
+  background-color: #FF9800;
+}
+
+.assignee {
+  color: #666;
+}
+
+.action-button {
+  padding: 6px 12px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.action-button:hover {
+  background: #764ba2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.table-footer {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #999;
+}
