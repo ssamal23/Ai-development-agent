@@ -1,6 +1,9 @@
 import json
 
 from src.llm.factory import get_llm
+from src.utils.llm_json import (
+    strip_markdown_json_fence,
+)
 
 
 def verify_implementation(
@@ -122,16 +125,7 @@ Otherwise return FAIL.
             "Verification Agent returned invalid response."
         )
 
-    content = content.strip()
-
-    # Remove Markdown fences if the model returns them.
-    if content.startswith("```"):
-        content = (
-            content
-            .replace("```json", "", 1)
-            .replace("```", "", 1)
-            .strip()
-        )
+    content = strip_markdown_json_fence(content)
 
     try:
         result = json.loads(content)

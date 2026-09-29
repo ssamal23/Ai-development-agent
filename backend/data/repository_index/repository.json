@@ -1,14 +1,14 @@
 {
   "repository_path": "D:/dummy-react-eshoppingcart",
-  "last_commit": "3dea29caf1b750e699f3d6004ad8b9b5246b3db9",
+  "last_commit": "e494754da4d14e297a6f55dc3cbe762f46fd76f1",
   "files": [
     {
       "path": ".gitignore",
-      "hash": "fe718e7babb14f3cbad2d97f08889b9ce5215ed3fe0e43b2b8cfbfb3b9b844e8",
-      "size": 253,
+      "hash": "2fd4d4babfa6ac7251ab9a281dd44622fb43a00d955c6f8c0b2030a0c89c23d8",
+      "size": 328,
       "extension": "",
       "language": null,
-      "content": "# Logs\nlogs\n*.log\nnpm-debug.log*\nyarn-debug.log*\nyarn-error.log*\npnpm-debug.log*\nlerna-debug.log*\n\nnode_modules\ndist\ndist-ssr\n*.local\n\n# Editor directories and files\n.vscode/*\n!.vscode/extensions.json\n.idea\n.DS_Store\n*.suo\n*.ntvs*\n*.njsproj\n*.sln\n*.sw?\n"
+      "content": "# Logs\nlogs\n*.log\nnpm-debug.log*\nyarn-debug.log*\nyarn-error.log*\npnpm-debug.log*\nlerna-debug.log*\n\nnode_modules\ndist\ndist-ssr\n*.local\n\n# Editor directories and files\n.vscode/*\n!.vscode/extensions.json\n.idea\n.DS_Store\n*.suo\n*.ntvs*\n*.njsproj\n*.sln\n*.sw?\n# Added by code-review-graph\n.code-review-graph/\n"
     },
     {
       "path": "eslint.config.js",
@@ -108,11 +108,11 @@
     },
     {
       "path": "src\\App.tsx",
-      "hash": "c7184fc9b1c36d7492093e1b5f5844c440bd3396deeace21b6699d3838f6ecb2",
-      "size": 3646,
+      "hash": "088a0932dc60a6075829448cbee762087d03bad84cd031ea0f9f1e0b5212f968",
+      "size": 136,
       "extension": ".tsx",
       "language": "typescript",
-      "content": "import { useState } from 'react'\nimport heroImg from './assets/hero.png'\nimport reactLogo from './assets/react.svg'\nimport viteLogo from './assets/vite.svg'\nimport './App.css'\n\nfunction App() {\n  const [count, setCount] = useState(0)\n\n  return (\n    <>\n      <section id=\"center\">\n        <div className=\"hero\">\n          <img src={heroImg} className=\"base\" width=\"170\" height=\"179\" alt=\"\" />\n          <img src={reactLogo} className=\"framework\" alt=\"React logo\" />\n          <img src={viteLogo} className=\"vite\" alt=\"Vite logo\" />\n        </div>\n        <div>\n          <h1>Get started</h1>\n          <p>\n            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>\n          </p>\n        </div>\n        <button\n          type=\"button\"\n          className=\"counter\"\n          onClick={() => setCount((count) => count + 1)}\n        >\n          Count is {count}\n        </button>\n      </section>\n\n      <div className=\"ticks\"></div>\n\n      <section id=\"next-steps\">\n        <div id=\"docs\">\n          <svg className=\"icon\" role=\"presentation\" aria-hidden=\"true\">\n            <use href=\"/icons.svg#documentation-icon\"></use>\n          </svg>\n          <h2>Documentation</h2>\n          <p>Your questions, answered</p>\n          <ul>\n            <li>\n              <a href=\"https://vite.dev/\" target=\"_blank\">\n                <img className=\"logo\" src={viteLogo} alt=\"\" />\n                Explore Vite\n              </a>\n            </li>\n            <li>\n              <a href=\"https://react.dev/\" target=\"_blank\">\n                <img className=\"button-icon\" src={reactLogo} alt=\"\" />\n                Learn more\n              </a>\n            </li>\n          </ul>\n        </div>\n        <div id=\"social\">\n          <svg className=\"icon\" role=\"presentation\" aria-hidden=\"true\">\n            <use href=\"/icons.svg#social-icon\"></use>\n          </svg>\n          <h2>Connect with us</h2>\n          <p>Join the Vite community</p>\n          <ul>\n            <li>\n              <a href=\"https://github.com/vitejs/vite\" target=\"_blank\">\n                <svg\n                  className=\"button-icon\"\n                  role=\"presentation\"\n                  aria-hidden=\"true\"\n                >\n                  <use href=\"/icons.svg#github-icon\"></use>\n                </svg>\n                GitHub\n              </a>\n            </li>\n            <li>\n              <a href=\"https://chat.vite.dev/\" target=\"_blank\">\n                <svg\n                  className=\"button-icon\"\n                  role=\"presentation\"\n                  aria-hidden=\"true\"\n                >\n                  <use href=\"/icons.svg#discord-icon\"></use>\n                </svg>\n                Discord\n              </a>\n            </li>\n            <li>\n              <a href=\"https://x.com/vite_js\" target=\"_blank\">\n                <svg\n                  className=\"button-icon\"\n                  role=\"presentation\"\n                  aria-hidden=\"true\"\n                >\n                  <use href=\"/icons.svg#x-icon\"></use>\n                </svg>\n                X.com\n              </a>\n            </li>\n            <li>\n              <a href=\"https://bsky.app/profile/vite.dev\" target=\"_blank\">\n                <svg\n                  className=\"button-icon\"\n                  role=\"presentation\"\n                  aria-hidden=\"true\"\n                >\n                  <use href=\"/icons.svg#bluesky-icon\"></use>\n                </svg>\n                Bluesky\n              </a>\n            </li>\n          </ul>\n        </div>\n      </section>\n\n      <div className=\"ticks\"></div>\n      <section id=\"spacer\"></section>\n    </>\n  )\n}\n\nexport default App\n"
+      "content": "import LoginPage from './LoginPage'\nimport './App.css'\n\nfunction App() {\n  return (\n    <LoginPage />\n  )\n}\n\nexport default App"
     },
     {
       "path": "src\\index.css",
@@ -171,12 +171,60 @@
       "content": "import React, { useState } from 'react';\nimport './LoginPage.css';\n\nconst LoginPage: React.FC = () => {\n  const [email, setEmail] = useState('');\n  const [password, setPassword] = useState('');\n\n  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {\n    e.preventDefault();\n    console.log('Login attempt with:', { email, password });\n  };\n\n  return (\n    <div className=\"login-page\">\n      <form className=\"login-form\" onSubmit={handleSubmit}>\n        <h1>Login</h1>\n        <div className=\"form-group\">\n          <label htmlFor=\"email\">Email</label>\n          <input\n            id=\"email\"\n            type=\"email\"\n            value={email}\n            onChange={(e) => setEmail(e.target.value)}\n            placeholder=\"Enter your email\"\n            required\n          />\n        </div>\n        <div className=\"form-group\">\n          <label htmlFor=\"password\">Password</label>\n          <input\n            id=\"password\"\n            type=\"password\"\n            value={password}\n            onChange={(e) => setPassword(e.target.value)}\n            placeholder=\"Enter your password\"\n            required\n          />\n        </div>\n        <button type=\"submit\" className=\"login-button\">Login</button>\n      </form>\n    </div>\n  );\n};\n\nexport default LoginPage;"
     },
     {
-      "path": "src\\App.tsx",
-      "hash": "088a0932dc60a6075829448cbee762087d03bad84cd031ea0f9f1e0b5212f968",
-      "size": 136,
-      "extension": ".tsx",
-      "language": "typescript",
-      "content": "import LoginPage from './LoginPage'\nimport './App.css'\n\nfunction App() {\n  return (\n    <LoginPage />\n  )\n}\n\nexport default App"
+      "path": ".claude\\settings.json",
+      "hash": "4ae9e3d464381fc2a53ef1320c76afb7c3d75b9ff0c24dc2a1fc0e16c8d7e0e2",
+      "size": 929,
+      "extension": ".json",
+      "language": "json",
+      "content": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"matcher\": \"Edit|Write\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"cat >/dev/null || true; command -v code-review-graph >/dev/null 2>&1 || exit 0; git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph update --skip-flows --repo \\\"$(git rev-parse --show-toplevel 2>/dev/null)\\\" || true\",\n            \"timeout\": 30\n          }\n        ]\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"matcher\": \"\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"cat >/dev/null || true; command -v code-review-graph >/dev/null 2>&1 || exit 0; git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph status --repo \\\"$(git rev-parse --show-toplevel 2>/dev/null)\\\" || echo 'Not a git repo, skipping'\",\n            \"timeout\": 10\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "path": ".claude\\skills\\debug-issue\\SKILL.md",
+      "hash": "f6868f7100912cb403f6163bf69938bbcb494c78beb8fb1675c7cff977491364",
+      "size": 1169,
+      "extension": ".md",
+      "language": "markdown",
+      "content": "---\nname: debug-issue\ndescription: Systematically debug issues using graph-powered code navigation\n---\n\n## Debug Issue\n\nTrace a bug through the knowledge graph before reading source.\n\n### Steps\n\n1. Call `semantic_search_nodes_tool` to find code related to the issue.\n2. Call `query_graph_tool` with `callers_of` and `callees_of` to trace the call chain in both directions.\n3. Call `get_flow_tool` for the execution path that reaches the suspect code. Its entry point is where the bug is triggered.\n4. Call `detect_changes_tool` to check whether a recent change caused the issue.\n5. Call `get_impact_radius_tool` on the suspect files to see what a fix would affect.\n\n## Token Efficiency Rules\n- Call `get_minimal_context_tool(task=\"<your task>\")` before any other graph tool.\n- Pass `detail_level=\"minimal\"` wherever a tool accepts it. Use \"standard\" only when minimal is not enough.\n- Prefer a targeted `query_graph_tool` call over a broad listing call.\n- Budget: about five tool calls and 800 tokens of graph output per task.\n- Read the implementation and its tests before changing code. The graph narrows scope; it does not replace the source.\n"
+    },
+    {
+      "path": ".claude\\skills\\explore-codebase\\SKILL.md",
+      "hash": "907fcd11c8a32b4f797124ac53e7a0b779fe7ba667863662e3d51759243b1b7f",
+      "size": 1364,
+      "extension": ".md",
+      "language": "markdown",
+      "content": "---\nname: explore-codebase\ndescription: Navigate and understand codebase structure using the knowledge graph\n---\n\n## Explore Codebase\n\nUse the code-review-graph MCP tools to find your way around the codebase.\n\n### Steps\n\n1. Call `get_architecture_overview_tool` for the community structure. Call `list_communities_tool`, then `get_community_tool`, only for the modules you need.\n2. Call `semantic_search_nodes_tool` to find a function or class by name or keyword.\n3. Call `query_graph_tool` with `callers_of`, `callees_of` or `imports_of` to trace relationships. `children_of` on a file lists its functions and classes.\n4. Call `list_flows_tool`, then `get_flow_tool` for one flow, to follow an execution path.\n5. Call `find_large_functions_tool` to find oversized functions.\n6. Call `list_graph_stats_tool` only when you need node, edge and language counts.\n\n## Token Efficiency Rules\n- Call `get_minimal_context_tool(task=\"<your task>\")` before any other graph tool.\n- Pass `detail_level=\"minimal\"` wherever a tool accepts it. Use \"standard\" only when minimal is not enough.\n- Prefer a targeted `query_graph_tool` call over a broad listing call.\n- Budget: about five tool calls and 800 tokens of graph output per task.\n- Read the implementation and its tests before changing code. The graph narrows scope; it does not replace the source.\n"
+    },
+    {
+      "path": ".claude\\skills\\refactor-safely\\SKILL.md",
+      "hash": "5a5650caa62a9718b80c452bc4cc8b8b74de8aa2b116ade17d8469e16a896b2c",
+      "size": 1350,
+      "extension": ".md",
+      "language": "markdown",
+      "content": "---\nname: refactor-safely\ndescription: Plan and execute safe refactoring using dependency analysis\n---\n\n## Refactor Safely\n\nPlan a refactor from the dependency graph and apply renames from a preview.\n\n### Steps\n\n1. Call `refactor_tool` with `mode=\"suggest\"` for refactoring candidates, or `mode=\"dead_code\"` for unreferenced code.\n2. For a rename, call `refactor_tool` with `mode=\"rename\"`, `old_name` and `new_name`. Check the returned edit list before applying.\n3. Call `apply_refactor_tool` with the returned `refactor_id` to apply the rename.\n4. Before a large refactor, call `get_impact_radius_tool` and `get_affected_flows_tool` to see the dependents and critical paths involved.\n5. Call `find_large_functions_tool` to find functions worth splitting.\n6. After the change, call `detect_changes_tool` to confirm the impact matches the plan.\n\n## Token Efficiency Rules\n- Call `get_minimal_context_tool(task=\"<your task>\")` before any other graph tool.\n- Pass `detail_level=\"minimal\"` wherever a tool accepts it. Use \"standard\" only when minimal is not enough.\n- Prefer a targeted `query_graph_tool` call over a broad listing call.\n- Budget: about five tool calls and 800 tokens of graph output per task.\n- Read the implementation and its tests before changing code. The graph narrows scope; it does not replace the source.\n"
+    },
+    {
+      "path": ".claude\\skills\\review-changes\\SKILL.md",
+      "hash": "17acfa8d056e7882caca51d2a89ccdbb4e29f715cbe74cbff5185af8c3081704",
+      "size": 1349,
+      "extension": ".md",
+      "language": "markdown",
+      "content": "---\nname: review-changes\ndescription: Perform a structured code review using change detection and impact\n---\n\n## Review Changes\n\nReview a change set with risk scores and blast radius from the knowledge graph.\n\n### Steps\n\n1. Call `detect_changes_tool` for risk-scored changed functions, test gaps and affected flows.\n2. Call `get_affected_flows_tool` only when you need the steps of an affected flow.\n3. For each high-risk function, call `query_graph_tool` with `pattern=\"tests_for\"` to check test coverage.\n4. Call `get_impact_radius_tool` when the blast radius is not clear from step 1.\n5. Suggest specific test cases for untested changes.\n\n### Output Format\n\nGroup findings by risk level (high, medium, low). For each finding give what changed and why it matters, its test coverage, and the suggested fix. End with a merge recommendation.\n\n## Token Efficiency Rules\n- Call `get_minimal_context_tool(task=\"<your task>\")` before any other graph tool.\n- Pass `detail_level=\"minimal\"` wherever a tool accepts it. Use \"standard\" only when minimal is not enough.\n- Prefer a targeted `query_graph_tool` call over a broad listing call.\n- Budget: about five tool calls and 800 tokens of graph output per task.\n- Read the implementation and its tests before changing code. The graph narrows scope; it does not replace the source.\n"
+    },
+    {
+      "path": ".mcp.json",
+      "hash": "d8f9963374b8d51d347985bd45119d671d1acd6134c0169a440fc6b6c9b038ef",
+      "size": 234,
+      "extension": ".json",
+      "language": "json",
+      "content": "{\n  \"mcpServers\": {\n    \"code-review-graph\": {\n      \"command\": \"uvx\",\n      \"args\": [\n        \"code-review-graph\",\n        \"serve\"\n      ],\n      \"cwd\": \"D:\\\\dummy-react-eshoppingcart\",\n      \"type\": \"stdio\"\n    }\n  }\n}\n"
+    },
+    {
+      "path": "CLAUDE.md",
+      "hash": "fac19f5275ddb1d7c1fb30d5a3a77927ee0727c0475bc3af4f93436663950076",
+      "size": 2390,
+      "extension": ".md",
+      "language": "markdown",
+      "content": "<!-- code-review-graph MCP tools -->\n## MCP Tools: code-review-graph\n\n**This project has a knowledge graph. Start with the code-review-graph\nMCP tools to narrow scope, then read the source.** The graph is cheaper than scanning files and\ngives you structural context (callers, dependents, test coverage) that file search cannot.\n\n### When to use graph tools FIRST\n\n- **Exploring code**: `semantic_search_nodes_tool` or `query_graph_tool` instead of Grep\n- **Understanding impact**: `get_impact_radius_tool` instead of manually tracing imports\n- **Code review**: `detect_changes_tool` + `get_review_context_tool` instead of reading entire files\n- **Finding relationships**: `query_graph_tool` with callers_of/callees_of/imports_of/tests_for\n- **Architecture questions**: `get_architecture_overview_tool` + `list_communities_tool`\n\n### Verify in the source\n\n- Narrow scope with the graph, then read the source. Do not change code from graph output alone.\n- For any non-trivial change, read the implementation and the relevant tests before concluding.\n- Verify the exact source when touching behavior, database logic, migrations, retries, fallbacks,\n  recovery, or compatibility code.\n- When the graph and the source disagree, the source wins. The graph may be stale or may not\n  model that relationship.\n- An empty graph result can mean \"not indexed\" or \"not statically visible\", not \"does not exist\".\n\n### Key Tools\n\n| Tool | Use when |\n| ------ | ---------- |\n| `detect_changes_tool` | Reviewing code changes — gives risk-scored analysis |\n| `get_review_context_tool` | Need source snippets for review — token-efficient |\n| `get_impact_radius_tool` | Understanding blast radius of a change |\n| `get_affected_flows_tool` | Finding which execution paths are impacted |\n| `query_graph_tool` | Tracing callers, callees, imports, tests, dependencies |\n| `semantic_search_nodes_tool` | Finding functions/classes by name or keyword |\n| `get_architecture_overview_tool` | Understanding high-level codebase structure |\n| `refactor_tool` | Planning renames, finding dead code |\n\n### Workflow\n\n1. The graph auto-updates on file changes (via hooks).\n2. Use `detect_changes_tool` for code review.\n3. Use `get_affected_flows_tool` to understand impact.\n4. Use `query_graph_tool` pattern=\"tests_for\" to check coverage.\n<!-- /code-review-graph MCP tools -->\n"
     }
   ]
 }

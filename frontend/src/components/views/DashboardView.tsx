@@ -1,12 +1,25 @@
+import { useEffect, useState } from 'react'
 import StatCard from '../StatCard'
 import TicketsTable from '../TicketsTable'
 import ActiveSessionsList from '../ActiveSessionsList'
 import PullRequestsList from '../PullRequestsList'
 import SystemActivity from '../SystemActivity'
 import SessionDetails from '../SessionDetails'
+import { fetchTickets, type TicketsResponse } from '../../api'
 import '../../styles/DashboardView.css'
 
 export default function DashboardView() {
+  const [ticketsData, setTicketsData] = useState<TicketsResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+
+  useEffect(() => {
+    fetchTickets()
+      .then(setTicketsData)
+      .catch((error: Error) => setLoadError(error.message))
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <div className="dashboard-view">
       <div className="dashboard-grid">
@@ -14,27 +27,29 @@ export default function DashboardView() {
         <div className="stats-section">
           <StatCard
             title="My Tickets"
-            value="8"
-            subtitle="Assigned to me"
-            action="View all tickets"
+            value={ticketsData ? String(ticketsData.total_tickets) : '-'}
+            subtitle="In the backlog"
+            action=""
           />
           <StatCard
             title="Active Sessions"
-            value="3"
+            value= {ticketsData ? `${ticketsData.in_progress_tickets_count}` : '-'}
             subtitle="In progress"
-            action="View sessions"
+            action=""
           />
           <StatCard
-            title="PRs Created"
-            value="12"
-            subtitle="This Sprint"
-            action="View pull requests"
+            title="Current Sprint"
+            value={ticketsData ? `Sprint ${ticketsData.sprint_no}` : '-'}
+            subtitle={
+              ticketsData ? `${ticketsData.in_progress_tickets_count} in progress` : ''
+            }
+            action=""
           />
           <StatCard
             title="Completed"
-            value="5"
+            value={ticketsData ? String(ticketsData.completed_tickets_count) : '-'}
             subtitle="This Sprint"
-            action="View completed"
+            action=""
           />
         </div>
 
@@ -44,7 +59,11 @@ export default function DashboardView() {
             {/* Tickets Table */}
             <div className="section-card">
               <h2 className="section-title">My Azure DevOps Tickets</h2>
-              <TicketsTable />
+              <TicketsTable
+                ticketsData={ticketsData}
+                loading={loading}
+                loadError={loadError}
+              />
             </div>
 
             {/* Active Sessions */}

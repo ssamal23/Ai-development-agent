@@ -9,3 +9,4 @@ class GitResult(BaseModel):
     pushed: bool = False
     message: str
     changed_files: list[str] = []
+    conflicts: list[str] = []

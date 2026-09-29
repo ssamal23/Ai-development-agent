@@ -13,12 +13,19 @@ from src.services.repository_service import (
 
 class RepositoryIndexService:
 
-    def __init__(self):
+    def __init__(
+        self,
+        repository_path: str | Path | None = None,
+        index_directory: str | Path | None = None,
+    ):
 
-        self.repository_service = RepositoryService()
+        self.repository_service = RepositoryService(
+            repository_path=repository_path
+        )
 
         self.index_directory = Path(
-            "data/repository_index"
+            index_directory
+            or "data/repository_index"
         )
 
         self.index_directory.mkdir(
@@ -287,7 +294,7 @@ class RepositoryIndexService:
 
         return {
             "type": "incremental",
-            "inde x": updated_index,
+            "index": updated_index,
             "changes": changes,
         }
 

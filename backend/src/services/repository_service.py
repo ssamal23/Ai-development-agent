@@ -7,8 +7,14 @@ from src.models.repository import FileMetadata
 
 
 class RepositoryService:
-    def __init__(self):
-        self.repository_path = Path(settings.repository_path)
+    def __init__(
+        self,
+        repository_path: str | Path | None = None,
+    ):
+        self.repository_path = Path(
+            repository_path
+            or settings.repository_path
+        )
 
     def validate_repository(self, require_git: bool = True) -> None:
         """

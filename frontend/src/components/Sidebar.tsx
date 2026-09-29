@@ -3,15 +3,17 @@ import '../styles/Sidebar.css'
 interface SidebarProps {
   activeSection: string
   setActiveSection: (section: string) => void
+  isConfigured: boolean
 }
 
-export default function Sidebar({ activeSection, setActiveSection }: SidebarProps) {
+export default function Sidebar({ activeSection, setActiveSection, isConfigured }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
     { id: 'tickets', label: 'My Tickets', icon: '🎫' },
     { id: 'sessions', label: 'Active Sessions', icon: '👥' },
     { id: 'projects', label: 'Projects', icon: '📁' },
     { id: 'repositories', label: 'Repositories', icon: '📦' },
+    { id: 'project-config', label: 'Project Configure', icon: '🔧' },
     { id: 'prs', label: 'Pull Requests', icon: '🔗' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
     { id: 'logs', label: 'Logs & History', icon: '📋' },
@@ -24,16 +26,24 @@ export default function Sidebar({ activeSection, setActiveSection }: SidebarProp
       </div>
 
       <nav className="sidebar-nav">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            className={`nav-item ${activeSection === item.id ? 'active' : ''}`}
-            onClick={() => setActiveSection(item.id)}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-          </button>
-        ))}
+        {menuItems.map((item) => {
+          const disabled = !isConfigured && item.id !== 'project-config'
+
+          return (
+            <button
+              key={item.id}
+              className={`nav-item ${activeSection === item.id ? 'active' : ''} ${
+                disabled ? 'disabled' : ''
+              }`}
+              onClick={() => !disabled && setActiveSection(item.id)}
+              disabled={disabled}
+              title={disabled ? 'Configure your project first' : undefined}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+            </button>
+          )
+        })}
       </nav>
 
       <div className="sidebar-footer">

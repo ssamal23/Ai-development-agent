@@ -2,6 +2,31 @@
   overflow-x: auto;
 }
 
+.tickets-summary-bar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.summary-item {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #f5f5f5;
+  color: #555;
+}
+
+.summary-item.summary-done {
+  background: rgba(76, 175, 80, 0.12);
+  color: #4CAF50;
+}
+
+.summary-item.summary-in-progress {
+  background: rgba(255, 152, 0, 0.12);
+  color: #FF9800;
+}
+
 .tickets-table {
   width: 100%;
   border-collapse: collapse;
@@ -87,4 +112,168 @@
   margin-top: 12px;
   font-size: 12px;
   color: #999;
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ticket-status-ok,
+.ticket-status-error {
+  margin: 6px 0 0 0;
+  font-size: 11px;
+  max-width: 160px;
+}
+
+.ticket-status-ok {
+  color: #4CAF50;
+}
+
+.ticket-status-error {
+  color: #F44336;
+}
+
+.expand-col {
+  width: 32px;
+  padding-left: 12px !important;
+  padding-right: 0 !important;
+}
+
+.expand-toggle {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  transform: rotate(-90deg);
+}
+
+.expand-toggle:hover {
+  background: #f0f0f0;
+  color: #667eea;
+}
+
+.expand-toggle.expanded {
+  transform: rotate(0deg);
+  color: #667eea;
+}
+
+.ticket-progress-row td {
+  background: #fafbff;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.progress-empty {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #999;
+}
+
+.ticket-progress-row .session-item {
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.ticket-progress-row .session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.ticket-progress-row .session-info {
+  flex: 1;
+}
+
+.ticket-progress-row .session-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.ticket-progress-row .session-branch {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: #666;
+}
+
+.ticket-progress-row .session-status {
+  text-align: right;
+}
+
+.ticket-progress-row .status-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #667eea;
+}
+
+.ticket-progress-row .status-time {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: #999;
+}
+
+.ticket-progress-row .session-stages {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ticket-progress-row .stage {
+  width: 26px;
+  height: 26px;
+  background: #e0e0e0;
+  border: 2px solid #d0d0d0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.ticket-progress-row .stage-done {
+  background: #4CAF50;
+  border-color: #4CAF50;
+  color: white;
+}
+
+.ticket-progress-row .stage-running {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.ticket-progress-row .stage-error {
+  background: #F44336;
+  border-color: #F44336;
+  color: white;
+}
+
+.stage-spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: white;
+  border-radius: 50%;
+  display: inline-block;
+  animation: stage-spin 0.7s linear infinite;
+}
+
+@keyframes stage-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

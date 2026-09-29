@@ -7,7 +7,11 @@ from src.models.pull_request import PullRequestResult
 
 class GitHubService:
 
-    def __init__(self):
+    def __init__(
+        self,
+        owner: str | None = None,
+        repo_name: str | None = None,
+    ):
         if not settings.github_token:
             raise ValueError(
                 "GITHUB_TOKEN is not configured."
@@ -17,9 +21,14 @@ class GitHubService:
             settings.github_token
         )
 
+        self.owner = (
+            owner
+            or settings.github_owner
+        )
+
         self.repository_name = (
-            f"{settings.github_owner}/"
-            f"{settings.github_repository}"
+            f"{self.owner}/"
+            f"{repo_name or settings.github_repository}"
         )
 
     def create_pull_request(
@@ -48,7 +57,7 @@ class GitHubService:
                 .get_pulls(
                     state="open",
                     head=(
-                        f"{settings.github_owner}:"
+                        f"{self.owner}:"
                         f"{head_branch}"
                     ),
                     base=base_branch,

@@ -4,6 +4,9 @@ from src.llm.factory import get_llm
 from src.models.code_change import (
     CodeChangeResponse,
 )
+from src.utils.llm_json import (
+    strip_markdown_json_fence,
+)
 
 
 def generate_code_changes(
@@ -12,6 +15,7 @@ def generate_code_changes(
     repository_context: list[dict],
     verification_result: dict | None = None,
     test_result: dict | None = None,
+    apply_error: dict | None = None,
     workspace_context: list[dict] | None = None,
     previous_code_changes: dict | None = None,
 ) -> CodeChangeResponse:
@@ -89,6 +93,37 @@ Do NOT:
 - Make unrelated changes
 
 Fix the actual implementation problem.
+"""
+
+    apply_error_feedback = ""
+
+    if apply_error:
+        apply_error_feedback = f"""
+PREVIOUS APPLY ERROR:
+
+{json.dumps(
+    apply_error,
+    indent=2,
+)}
+
+Your previous "changes" could not be applied to the
+workspace because of a create/modify/delete action
+mismatch with the file's actual current state.
+
+This almost always means one of:
+
+- You used "create" for a file that already exists
+  (it was created by YOUR OWN previous attempt in this
+  same retry loop - use "modify" for it instead, and
+  base the content on LATEST WORKSPACE CONTEXT if that
+  file appears there).
+- You used "modify" for a file that does not exist yet
+  (use "create" instead).
+- You used "delete" for a file that does not exist.
+
+Re-check the action for every file in your previous
+"changes" against LATEST WORKSPACE CONTEXT and fix the
+mismatched action(s). Do not repeat the same mistake.
 """
 
     previous_changes_context = ""
@@ -253,6 +288,8 @@ LATEST WORKSPACE CONTEXT:
 
 {test_feedback}
 
+{apply_error_feedback}
+
 CODE GENERATION REQUIREMENTS:
 
 Before generating code:
@@ -362,22 +399,7 @@ Every delete change MUST contain:
             f"usage={response.response_metadata.get('usage')}"
         )
 
-    if content.startswith("```"):
-
-        if content.startswith("```json"):
-            content = content[
-                len("```json"):
-            ].strip()
-
-        elif content.startswith("```"):
-            content = content[
-                len("```"):
-            ].strip()
-
-        if content.endswith("```"):
-            content = content[
-                :-len("```")
-            ].strip()
+    content = strip_markdown_json_fence(content)
 
     try:
         data = json.loads(

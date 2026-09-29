@@ -14,7 +14,22 @@ class CodeEditService:
     def apply_changes(
         self,
         changes,
+        allow_recreate: set[str] | None = None,
     ) -> list[str]:
+        """
+        `allow_recreate` holds file paths (repo-relative,
+        forward-slash) that this same ticket run already
+        created in an earlier attempt. On a verification/
+        test retry, the Coding Agent may re-emit the same
+        "create" action for a file it created itself last
+        time - that must be allowed to overwrite, since the
+        safety guard exists to protect pre-existing repo
+        content, not the agent's own prior output.
+        """
+
+        allow_recreate = (
+            allow_recreate or set()
+        )
 
         changed_files = []
 
@@ -29,11 +44,22 @@ class CodeEditService:
                 file_path
             )
 
+            normalized_file = (
+                change.file.replace(
+                    "\\",
+                    "/",
+                )
+            )
+
             if change.action == "create":
 
                 self._create_file(
                     file_path,
                     change.content,
+                    allow_overwrite=(
+                        normalized_file
+                        in allow_recreate
+                    ),
                 )
 
             elif change.action == "modify":
@@ -66,9 +92,13 @@ class CodeEditService:
         self,
         file_path: Path,
         content: str | None,
+        allow_overwrite: bool = False,
     ) -> None:
 
-        if file_path.exists():
+        if (
+            file_path.exists()
+            and not allow_overwrite
+        ):
             raise FileExistsError(
                 f"File already exists: "
                 f"{file_path}"

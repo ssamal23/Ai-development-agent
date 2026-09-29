@@ -1,3 +1,7 @@
+To reun the backend application
+uvicorn main:app --reload
+
+
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         DEVELOPER / USER                            │
 │                                                                     │

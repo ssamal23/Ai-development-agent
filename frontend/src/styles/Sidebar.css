@@ -54,6 +54,16 @@
   border-right: 3px solid #667eea;
 }
 
+.nav-item.disabled {
+  color: #555;
+  cursor: not-allowed;
+}
+
+.nav-item.disabled:hover {
+  background-color: transparent;
+  color: #555;
+}
+
 .nav-icon {
   font-size: 18px;
   min-width: 20px;

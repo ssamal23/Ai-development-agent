@@ -3,7 +3,7 @@ import '../styles/StatCard.css'
 interface StatCardProps {
   title: string
   value: string
-  subtitle: string
+  subtitle?: string
   action: string
 }
 
@@ -16,7 +16,7 @@ export default function StatCard({ title, value, subtitle, action }: StatCardPro
       <div className="stat-value">{value}</div>
       <div className="stat-subtitle">{subtitle}</div>
       <a href="#" className="stat-action">
-        {action} →
+        {action}
       </a>
     </div>
   )

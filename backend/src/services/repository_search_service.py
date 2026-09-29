@@ -9,13 +9,21 @@ from src.services.repository_index_service import (
 
 class RepositorySearchService:
 
-    def __init__(self):
+    def __init__(
+        self,
+        repository_path: str | Path | None = None,
+        index_directory: str | Path | None = None,
+    ):
         self.repository_path = Path(
-            settings.repository_path
+            repository_path
+            or settings.repository_path
         )
 
         self.index_service = (
-            RepositoryIndexService()
+            RepositoryIndexService(
+                repository_path=repository_path,
+                index_directory=index_directory,
+            )
         )
 
     def search(

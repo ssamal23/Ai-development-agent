@@ -23,9 +23,14 @@ def get_llm() -> BaseChatModel:
 
     if settings.llm_provider == "claude":
         return ChatAnthropic(
-            model=settings.llm_model,
+            model=settings.anthropic_llm_model,
             api_key=settings.anthropic_api_key,
-            temperature=0,
+            # Sonnet 5 / Opus 5 turn on adaptive thinking by
+            # default, which makes response.content a list of
+            # thinking/text blocks instead of a plain string.
+            # Every agent here parses response.content as a
+            # plain JSON string, so thinking must stay disabled.
+            thinking={"type": "disabled"},
         )
 
     raise ValueError(

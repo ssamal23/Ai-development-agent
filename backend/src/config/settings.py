@@ -2,12 +2,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    google_api_key: str = ""
+    # google_api_key: str = ""
     openai_api_key: str = ""
     anthropic_api_key: str = ""
 
-    llm_provider: str = "gemini"
-    llm_model: str = "gemini-2.5-flash"
+    llm_provider: str = "claude"
+    # llm_model: str = "gemini-2.5-flash"
+    anthropic_llm_model: str = "claude-sonnet-5"
 
     repository_path: str
 

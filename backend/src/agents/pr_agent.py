@@ -10,6 +10,9 @@ class PRAgent:
     def __init__(
         self,
         repository_path: str | Path | None = None,
+        owner: str | None = None,
+        repo_name: str | None = None,
+        base_branch: str | None = None,
     ):
         self.repository_path = (
             Path(
@@ -19,8 +22,16 @@ class PRAgent:
             .resolve()
         )
 
+        self.base_branch = (
+            base_branch
+            or settings.github_base_branch
+        )
+
         self.github_service = (
-            GitHubService()
+            GitHubService(
+                owner=owner,
+                repo_name=repo_name,
+            )
         )
 
     def create_pull_request(
@@ -63,9 +74,7 @@ class PRAgent:
                 title=title,
                 body=body,
                 head_branch=branch_name,
-                base_branch=(
-                    settings.github_base_branch
-                ),
+                base_branch=self.base_branch,
             )
         )
 
@@ -182,9 +191,18 @@ def create_pull_request(
     changed_files: list[str],
     verification_result: dict,
     test_result: dict,
+    repository_path: str | Path | None = None,
+    owner: str | None = None,
+    repo_name: str | None = None,
+    base_branch: str | None = None,
 ) -> dict:
 
-    agent = PRAgent()
+    agent = PRAgent(
+        repository_path=repository_path,
+        owner=owner,
+        repo_name=repo_name,
+        base_branch=base_branch,
+    )
 
     result = agent.create_pull_request(
         ticket=ticket,

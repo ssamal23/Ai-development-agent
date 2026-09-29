@@ -109,9 +109,36 @@ class GitAgent:
             )
         )
 
-        self.git_service.push(
-            branch_name
+        push_result = (
+            self.git_service.push(
+                branch_name
+            )
         )
+
+        if not push_result.get("success"):
+            return GitResult(
+                success=False,
+                branch=branch_name,
+                commit=commit,
+                remote=(
+                    self.git_service
+                    .get_remote_url()
+                ),
+                pushed=False,
+                message=(
+                    push_result.get(
+                        "message",
+                        "Push failed"
+                    )
+                ),
+                changed_files=changed_files,
+                conflicts=(
+                    push_result.get(
+                        "conflicts",
+                        []
+                    )
+                ),
+            )
 
         return GitResult(
             success=True,

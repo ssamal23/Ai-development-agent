@@ -1,0 +1,96 @@
+.project-configure-view {
+  width: 100%;
+  max-width: 640px;
+}
+
+.config-hint {
+  margin: -8px 0 20px 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.config-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.config-group-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.config-field input,
+.config-field select {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #1a1a1a;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.config-field input:focus,
+.config-field select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.config-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #fdecea;
+  color: #c0392b;
+  font-size: 13px;
+}
+
+.config-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.save-button {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.save-button:hover {
+  opacity: 0.9;
+}
+
+.save-confirmation {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4CAF50;
+}

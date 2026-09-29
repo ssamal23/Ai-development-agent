@@ -1,6 +1,9 @@
 import json
 
 from src.llm.factory import get_llm
+from src.utils.llm_json import (
+    strip_markdown_json_fence,
+)
 
 
 def create_implementation_plan(
@@ -892,10 +895,7 @@ Return ONLY the JSON object.
     # Remove accidental Markdown JSON fences
     # =========================================================
 
-    if content.startswith("```"):
-        content = content.strip("`")
-        content = content.removeprefix("json")
-        content = content.strip()
+    content = strip_markdown_json_fence(content)
 
     # =========================================================
     # Parse JSON
