@@ -1,0 +1,15 @@
+{
+  "ticket": {
+    "id": "ENH_FRONT_DEV-004",
+    "title": "Create Access Management page component",
+    "description": "Create a new Access Management page component matching the design in the linked Figma file (a permissions matrix showing which roles can perform which actions). Follow the existing project's design system (colors, fonts, spacing, components) instead of the raw styling in the Figma file.",
+    "acceptance_criteria": [
+      "A page component is created matching the layout and content shown in the Figma design (a permissions matrix table with roles as columns and actions as rows, each cell showing whether that role has the permission)",
+      "Styling reuses the existing project's design system rather than introducing new colors, fonts, or spacing"
+    ],
+    "state": "To Do",
+    "priority": "High",
+    "assignee": "Unassigned",
+    "design_reference": "https://www.figma.com/design/zYLrG4iGIyGCe4VdTjbAz0/Audit-test?node-id=0-1&t=2jLtKW7ozxX9Ow5Z-1"
+  }
+}

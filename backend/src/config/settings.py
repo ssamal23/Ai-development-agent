@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     github_repository: str
     github_base_branch: str = "main"
 
+    figma_api_token: str = ""
+
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

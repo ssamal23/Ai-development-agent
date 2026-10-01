@@ -6,6 +6,7 @@ import {
   type TicketsResponse,
   type TicketSession,
 } from '../api'
+import TokenUsagePanel from './TokenUsagePanel'
 import '../styles/TicketsTable.css'
 
 type TicketStatus = 'idle' | 'running' | 'done' | 'error'
@@ -330,6 +331,7 @@ export default function TicketsTable({ ticketsData, loading, loadError }: Ticket
                               </div>
                             ))}
                           </div>
+                          <TokenUsagePanel usage={session.token_usage} />
                         </div>
                       )}
                     </td>

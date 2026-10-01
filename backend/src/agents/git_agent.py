@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from langfuse import observe
+
 from src.config.settings import settings
 from src.models.git import GitResult
 from src.services.git_service import GitService
@@ -202,6 +204,7 @@ class GitAgent:
         return value
 
 
+@observe(as_type="tool", name="create-git-branch")
 def create_git_branch(
     ticket: dict,
     repository_path: str | Path | None = None,
@@ -216,6 +219,7 @@ def create_git_branch(
     )
 
 
+@observe(as_type="tool", name="commit-and-push")
 def commit_and_push(
     ticket: dict,
     branch_name: str,

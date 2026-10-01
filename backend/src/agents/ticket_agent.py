@@ -1,8 +1,19 @@
+from langfuse import observe, get_client
+
 from src.llm.factory import get_llm
+from src.services.observability import get_langchain_callbacks
 from src.utils.ticket_category import parse_ticket_category
 
 
+@observe(as_type="agent", name="ticket-agent")
 def analyze_ticket(ticket: dict) -> str:
+    get_client().update_current_span(
+        input={
+            "ticket_id": ticket.get("id"),
+            "ticket_title": ticket.get("title"),
+        }
+    )
+
     llm = get_llm()
 
     category = parse_ticket_category(
@@ -64,6 +75,11 @@ Provide:
 Do not write code yet.
 """
 
-    response = llm.invoke(prompt)
+    response = llm.invoke(
+        prompt,
+        config={
+            "callbacks": get_langchain_callbacks(),
+        },
+    )
 
     return response.content

@@ -1,6 +1,9 @@
 import json
 import subprocess
 from pathlib import Path
+
+from langfuse import observe
+
 from src.config.settings import settings
 
 
@@ -24,6 +27,7 @@ class QualityGateResult:
         }
 
 
+@observe(as_type="tool", name="quality-gate-agent")
 def run_quality_gates(
     workspace_path: str | Path,
 ) -> QualityGateResult:

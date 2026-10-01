@@ -38,6 +38,11 @@ httpx
 aiohttp
 
 # ==========================================
+# Design reference capture (Figma / web page)
+# ==========================================
+playwright
+
+# ==========================================
 # Data Validation / Serialization
 # ==========================================
 orjson

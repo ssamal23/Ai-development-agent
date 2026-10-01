@@ -84,6 +84,20 @@ from src.utils.ticket_category import (
     parse_ticket_category,
 )
 
+from src.services.design_reference_service import (
+    resolve_design_reference,
+)
+
+from src.agents.design_review_agent import (
+    review_design,
+)
+
+from src.services.render_service import (
+    render_workspace,
+)
+
+MAX_DESIGN_REVIEW_ATTEMPTS = 2
+
 
 class TicketState(TypedDict):
     ticket: dict
@@ -97,6 +111,8 @@ class TicketState(TypedDict):
     repo_config: dict
 
     analysis: str
+
+    design_reference: dict | None
 
     repository_structure: list[str]
 
@@ -133,6 +149,10 @@ class TicketState(TypedDict):
     test_result: dict
 
     test_attempts: int
+
+    design_review_result: dict | None
+
+    design_review_attempts: int
 
     workspace_path: str
 
@@ -331,6 +351,46 @@ def read_files_node(
     }
 
 
+def resolve_design_reference_node(
+    state: TicketState,
+):
+    """
+    Resolve an optional design reference on the ticket into
+    an image the Coding Agent can look at. A ticket may
+    provide either or both:
+
+    - design_reference: a Figma frame link or a plain web
+      page URL.
+    - design_reference_image: a directly pasted/uploaded
+      design image (a data URL or bare base64 string).
+
+    A Figma URL always wins when present; otherwise a pasted
+    image is used; a non-Figma URL falls back to a web page
+    screenshot. A ticket with neither is the common case and
+    is a no-op here. A reference that fails to resolve (bad
+    URL, missing Figma token, unreachable page, invalid image
+    data) is recorded with its error and the ticket proceeds
+    without the image rather than failing outright.
+    """
+
+    design_reference = resolve_design_reference(
+        url=state["ticket"].get(
+            "design_reference"
+        ),
+        image_data=state["ticket"].get(
+            "design_reference_image"
+        ),
+    )
+
+    return {
+        "design_reference": (
+            design_reference.__dict__
+            if design_reference
+            else None
+        )
+    }
+
+
 def planning_node(
     state: TicketState,
 ):
@@ -342,11 +402,25 @@ def planning_node(
         relevant_files=state[
             "repository_context"
         ],
+        design_reference=state.get(
+            "design_reference"
+        ),
     )
 
     return {
         "implementation_plan": plan
     }
+
+
+def _only_if_failed(result, is_failed):
+    """
+    A passing verification/test result is still in state when the
+    Coding Agent is re-run for a later reason (e.g. a design
+    review failure). Passing it on would make the prompt claim
+    that stage failed.
+    """
+
+    return result if result and is_failed(result) else None
 
 
 def coding_node(
@@ -370,18 +444,27 @@ def coding_node(
         repository_context=state[
             "repository_context"
         ],
-        verification_result=state.get(
-            "verification_result"
+        verification_result=_only_if_failed(
+            state.get("verification_result"),
+            lambda r: r.get("status") != "PASS",
         ),
-        test_result=state.get(
-            "test_result"
+        test_result=_only_if_failed(
+            state.get("test_result"),
+            lambda r: not r.get("success"),
         ),
         apply_error=state.get(
             "code_apply_error"
         ),
+        design_feedback=_only_if_failed(
+            state.get("design_review_result"),
+            lambda r: r.get("status") == "FAIL",
+        ),
         workspace_context=workspace_context,
         previous_code_changes=(
             previous_code_changes
+        ),
+        design_reference=state.get(
+            "design_reference"
         ),
     )
 
@@ -439,6 +522,9 @@ def verification_node(
         code_changes=state[
             "code_changes"
         ],
+        design_reference=state.get(
+            "design_reference"
+        ),
     )
 
     return {
@@ -909,6 +995,83 @@ def tests_passed_node(
     }
 
 
+def design_review_node(
+    state: TicketState,
+):
+    """
+    Compare a screenshot of the running app with the design
+    reference. Never blocks the ticket: if there is no design
+    image, or the app can't be rendered or reviewed, the review
+    is skipped and the run continues to the PR.
+    """
+
+    attempts = state.get("design_review_attempts", 0)
+
+    design_reference = state.get("design_reference") or {}
+
+    if not design_reference.get("image_base64"):
+        return {
+            "design_review_result": {
+                "status": "SKIPPED",
+                "summary": "No design reference image.",
+                "issues": [],
+            }
+        }
+
+    # Optional per-ticket route of the designed screen, e.g.
+    # "design_review_route": "/access-management".
+    screenshot, error = render_workspace(
+        state["workspace_path"],
+        route=state["ticket"].get(
+            "design_review_route"
+        ) or "/",
+    )
+
+    if error:
+        return {
+            "design_review_result": {
+                "status": "SKIPPED",
+                "summary": f"App not rendered: {error}",
+                "issues": [],
+            }
+        }
+
+    try:
+        result = review_design(
+            design_reference,
+            screenshot,
+        )
+
+    except Exception as review_error:
+        return {
+            "design_review_result": {
+                "status": "SKIPPED",
+                "summary": f"Review failed: {review_error}",
+                "issues": [],
+            }
+        }
+
+    return {
+        "design_review_result": result,
+        "design_review_attempts": attempts + 1,
+    }
+
+
+def design_review_router(
+    state: TicketState,
+):
+    result = state.get("design_review_result") or {}
+
+    if (
+        result.get("status") == "FAIL"
+        and state.get("design_review_attempts", 0)
+        < MAX_DESIGN_REVIEW_ATTEMPTS
+    ):
+        return "refresh_workspace_after_test_failure"
+
+    return "create_git_branch"
+
+
 def tests_failed_node(
     state: TicketState,
 ):
@@ -1313,6 +1476,11 @@ def create_workflow():
     )
 
     graph.add_node(
+        "resolve_design_reference",
+        resolve_design_reference_node,
+    )
+
+    graph.add_node(
         "create_plan",
         planning_node,
     )
@@ -1370,6 +1538,11 @@ def create_workflow():
     graph.add_node(
         "tests_passed",
         tests_passed_node,
+    )
+
+    graph.add_node(
+        "design_review",
+        design_review_node,
     )
 
     graph.add_node(
@@ -1459,6 +1632,11 @@ def create_workflow():
 
     graph.add_edge(
         "read_relevant_files",
+        "resolve_design_reference",
+    )
+
+    graph.add_edge(
+        "resolve_design_reference",
         "create_plan",
     )
 
@@ -1555,7 +1733,20 @@ def create_workflow():
 
     graph.add_edge(
         "tests_passed",
-        "create_git_branch",
+        "design_review",
+    )
+
+    graph.add_conditional_edges(
+        "design_review",
+        design_review_router,
+        {
+            "refresh_workspace_after_test_failure": (
+                "refresh_workspace_after_test_failure"
+            ),
+            "create_git_branch": (
+                "create_git_branch"
+            ),
+        },
     )
 
     graph.add_edge(

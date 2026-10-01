@@ -1,14 +1,19 @@
 import json
+import re
+
+from langchain_core.messages import HumanMessage
+from langchain_core.runnables import RunnableLambda
+from langfuse import observe, get_client
+from pydantic import ValidationError
 
 from src.llm.factory import get_llm
 from src.models.code_change import (
     CodeChangeResponse,
 )
-from src.utils.llm_json import (
-    strip_markdown_json_fence,
-)
+from src.services.observability import get_langchain_callbacks
 
 
+@observe(as_type="agent", name="coding-agent")
 def generate_code_changes(
     ticket: dict,
     implementation_plan: dict,
@@ -16,8 +21,10 @@ def generate_code_changes(
     verification_result: dict | None = None,
     test_result: dict | None = None,
     apply_error: dict | None = None,
+    design_feedback: dict | None = None,
     workspace_context: list[dict] | None = None,
     previous_code_changes: dict | None = None,
+    design_reference: dict | None = None,
 ) -> CodeChangeResponse:
     """
     Generate code changes using the current
@@ -26,6 +33,29 @@ def generate_code_changes(
     During retries, workspace_context is the
     source of truth for the latest implementation.
     """
+
+    # Override the default @observe input capture: the raw args
+    # here include full repo/workspace file contents and a
+    # base64 design image, which would bloat every trace and
+    # obscure the one thing worth seeing at a glance - what this
+    # attempt was actually trying to fix.
+    get_client().update_current_span(
+        input={
+            "ticket_id": ticket.get("id"),
+            "ticket_title": ticket.get("title"),
+            "coding_attempt_is_retry": bool(
+                previous_code_changes
+            ),
+            "previous_verification_status": (
+                (verification_result or {}).get("status")
+            ),
+            "previous_test_success": (
+                (test_result or {}).get("success")
+            ),
+            "has_apply_error": bool(apply_error),
+            "has_design_reference": bool(design_reference),
+        }
+    )
 
     llm = get_llm()
 
@@ -95,6 +125,24 @@ Do NOT:
 Fix the actual implementation problem.
 """
 
+    design_review_feedback = ""
+
+    if design_feedback:
+        design_review_feedback = f"""
+PREVIOUS DESIGN REVIEW:
+
+{json.dumps(
+    design_feedback,
+    indent=2,
+)}
+
+The implementation passed verification and tests, but a
+screenshot of the running app does not match the design
+reference. Fix EXACTLY the listed differences, using the
+exact values given (hex colors, font sizes, radii). Keep
+everything else unchanged.
+"""
+
     apply_error_feedback = ""
 
     if apply_error:
@@ -132,9 +180,8 @@ mismatched action(s). Do not repeat the same mistake.
         previous_changes_context = f"""
 PREVIOUS GENERATED CODE CHANGES:
 
-{json.dumps(
-    previous_code_changes,
-    indent=2,
+{_format_previous_changes(
+    previous_code_changes
 )}
 
 These changes represent the previous implementation
@@ -145,12 +192,77 @@ Do not blindly regenerate them.
 Keep working changes where appropriate and fix
 only the parts that caused verification or test
 failures.
+
+Only your latest response is applied, so it must
+contain the COMPLETE set of changes: every file
+from the previous attempt (unchanged files
+included, with their full content) plus your fixes.
 """
 
     latest_workspace_context = (
         workspace_context
         or []
     )
+
+    design_reference_context = ""
+    design_reference_image = None
+
+    if design_reference:
+
+        if design_reference.get("image_base64"):
+            style_tokens_block = ""
+
+            if design_reference.get("style_tokens"):
+                style_tokens_block = (
+                    "EXACT STYLE VALUES FROM THE DESIGN "
+                    "(authoritative - use these hex codes, "
+                    "not guesses from the image):\n"
+                    f"{design_reference['style_tokens']}\n"
+                )
+
+            design_reference_context = f"""
+DESIGN REFERENCE:
+
+A design reference image is attached to this
+message: {design_reference.get("label")}
+({design_reference.get("url")}).
+
+Per RULE 27 below, match this design's layout,
+structure, content AND its colors, fonts and
+radii.
+{style_tokens_block}
+
+Study the image carefully, but do NOT describe,
+narrate, or explain what you see in it anywhere
+in your response. Do not write any sentence like
+"Looking at this design..." or "I can see...".
+Go straight from analyzing the image to producing
+the requested output through the tool/schema
+provided for this call.
+"""
+            design_reference_image = {
+                "media_type": (
+                    design_reference.get(
+                        "image_media_type"
+                    )
+                    or "image/png"
+                ),
+                "data": design_reference[
+                    "image_base64"
+                ],
+            }
+
+        elif design_reference.get("error"):
+            design_reference_context = f"""
+DESIGN REFERENCE:
+
+A design reference was provided
+({design_reference.get("url")}) but could not be
+loaded: {design_reference.get("error")}
+
+Proceed using the ticket and implementation plan
+alone.
+"""
 
     prompt = f"""
 You are a senior software engineer working on
@@ -248,11 +360,42 @@ IMPORTANT RULES:
 24. Do not change the implementation plan unless
     required to fix an identified problem.
 
-25. Return ONLY valid JSON.
+25. Produce your output only through the
+    structured tool/schema provided for this
+    call. Do not also write it out as JSON text,
+    Markdown, or any other format in your reply.
 
-26. Do not return Markdown code fences.
+26. Do not narrate, describe, or explain what you
+    see in the ticket, the implementation plan, or
+    any provided image anywhere in your reply -
+    for example, never write a sentence like
+    "Looking at this..." or "I can see...". Go
+    directly to producing the requested output.
 
-27. Do not add explanations outside the JSON.
+27. If a DESIGN REFERENCE is provided, the result
+    MUST visually match it: layout, structure,
+    content, colors, fonts, border radii and
+    spacing.
+
+    Use the EXACT STYLE VALUES listed in the
+    DESIGN REFERENCE section for every color
+    (backgrounds, text, borders, gradients). Do
+    not approximate colors from the image when
+    exact hex values are given.
+
+    Prefer the repository's existing mechanism for
+    expressing them: if an existing CSS variable
+    or class already resolves to the same color,
+    reuse it. If the design's color differs from
+    every existing token, set the design's exact
+    value (update the variable's value, or add a
+    new variable) instead of substituting the
+    "closest" existing color.
+
+    Keep the project's structure and conventions
+    (file layout, component patterns, variable
+    naming); only the visual values follow the
+    design.
 
 TICKET:
 
@@ -289,6 +432,10 @@ LATEST WORKSPACE CONTEXT:
 {test_feedback}
 
 {apply_error_feedback}
+
+{design_review_feedback}
+
+{design_reference_context}
 
 CODE GENERATION REQUIREMENTS:
 
@@ -341,108 +488,298 @@ After generating the code, mentally verify:
 10. If previous tests failed, has the root cause
     been addressed?
 
-Return exactly this JSON structure:
+11. If a design reference was provided, do the
+    layout/structure AND every color, font and
+    radius match it (using the exact listed hex
+    values), expressed through the repository's
+    existing variables/classes where they already
+    resolve to the same value?
 
-{{
-  "changes": [
-    {{
-      "action": "create",
-      "file": "relative/path/to/file",
-      "reason": "Why this file is required.",
-      "content": "Complete file content."
-    }},
-    {{
-      "action": "modify",
-      "file": "relative/path/to/file",
-      "reason": "Why this file needs modification.",
-      "content": "Complete updated file content."
-    }},
-    {{
-      "action": "delete",
-      "file": "relative/path/to/file",
-      "reason": "Why this file should be deleted.",
-      "content": null
-    }}
-  ]
-}}
+For each file that needs to change, produce one
+change entry with an action ("create", "modify",
+or "delete"), the relative file path, a short
+reason, and its content.
 
-If no file needs to be deleted, do not include
-a delete change.
+Every "create" or "modify" entry's content MUST
+be that file's COMPLETE resulting content. Every
+"delete" entry's content MUST be null. Omit
+"delete" entries entirely if nothing needs to be
+deleted.
 
-Every create or modify change MUST contain
-complete file content.
-
-Every delete change MUST contain:
-
-"content": null
+Produce the list of change entries directly
+through the tool/schema provided for this call -
+do not write it out as JSON text in your reply.
 """
 
-    response = llm.invoke(prompt)
+    # Structured output: Claude's own tool-calling constructs
+    # the JSON, so it can't drift into conversational prose,
+    # wrap it in an inconsistent Markdown fence, or emit an
+    # unescaped quote/control-character that breaks hand-rolled
+    # json.loads() parsing. This replaced a manual invoke() +
+    # fence-stripping + json.loads() pipeline that kept failing
+    # on a new edge case each time a model quirk surfaced.
+    #
+    # include_raw=True returns {"raw", "parsed", "parsing_error"}
+    # instead of raising inside the parser, so a malformed tool
+    # call can be inspected and repaired (see
+    # _parse_structured_output) rather than crashing the run
+    # after minutes of LLM work.
+    #
+    # Built by hand instead of with_structured_output() so the
+    # double-encoded `changes` string is decoded *before* pydantic
+    # validation. Otherwise PydanticToolsParser raises a list_type
+    # ValidationError that Langfuse records as a failed span even
+    # though the output was recovered afterwards.
+    structured_llm = (
+        llm.bind_tools(
+            [CodeChangeResponse],
+            tool_choice=CodeChangeResponse.__name__,
+        )
+        | RunnableLambda(_decode_string_changes)
+        | RunnableLambda(_to_structured_output)
+    )
 
-    content = response.content
+    if design_reference_image:
+        message = HumanMessage(
+            content=[
+                *_build_prompt_blocks(prompt),
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": (
+                            design_reference_image[
+                                "media_type"
+                            ]
+                        ),
+                        "data": (
+                            design_reference_image[
+                                "data"
+                            ]
+                        ),
+                    },
+                },
+            ]
+        )
+        output = structured_llm.invoke(
+            [message],
+            config={
+                "callbacks": get_langchain_callbacks(),
+            },
+        )
+
+    else:
+        output = structured_llm.invoke(
+            [
+                HumanMessage(
+                    content=_build_prompt_blocks(prompt)
+                )
+            ],
+            config={
+                "callbacks": get_langchain_callbacks(),
+            },
+        )
+
+    result = _parse_structured_output(
+        output
+    )
 
     if not isinstance(
-        content,
-        str,
+        result,
+        CodeChangeResponse,
     ):
         raise ValueError(
             "Coding Agent returned an invalid response."
         )
-
-    content = content.strip()
-
-    if not content:
-        raise ValueError(
-            "Coding Agent returned an empty response. "
-            f"stop_reason="
-            f"{response.response_metadata.get('stop_reason')} "
-            f"usage={response.response_metadata.get('usage')}"
-        )
-
-    content = strip_markdown_json_fence(content)
-
-    try:
-        data = json.loads(
-            content
-        )
-
-    except json.JSONDecodeError as error:
-        raise ValueError(
-            "Coding Agent returned invalid JSON: "
-            f"{error}"
-        )
-
-    if not isinstance(
-        data,
-        dict,
-    ):
-        raise ValueError(
-            "Coding Agent response must be a JSON object."
-        )
-
-    if "changes" not in data:
-        raise ValueError(
-            "Coding Agent response is missing "
-            "'changes'."
-        )
-
-    if not isinstance(
-        data["changes"],
-        list,
-    ):
-        raise ValueError(
-            "'changes' must be a list."
-        )
-
-    result = CodeChangeResponse(
-        **data
-    )
 
     _validate_code_changes(
         result
     )
 
     return result
+
+
+# Everything before this marker (instructions, ticket, plan and the
+# original repository context) is identical across the Coding Agent's
+# retries within a run; everything after it (latest workspace, feedback)
+# changes. The stable part is marked for Anthropic prompt caching, so
+# retries re-read it at ~10% of the normal input price.
+_CACHE_SPLIT_MARKER = "\nLATEST WORKSPACE CONTEXT:\n"
+
+
+def _build_prompt_blocks(prompt: str) -> list[dict]:
+    split_at = prompt.find(_CACHE_SPLIT_MARKER)
+
+    if split_at == -1:
+        return [{"type": "text", "text": prompt}]
+
+    return [
+        {
+            "type": "text",
+            "text": prompt[:split_at],
+            "cache_control": {"type": "ephemeral"},
+        },
+        {"type": "text", "text": prompt[split_at:]},
+    ]
+
+
+def _format_previous_changes(
+    previous_code_changes: dict,
+) -> str:
+    """
+    Render the previous attempt as plain file blocks.
+
+    It used to be embedded as a raw {"changes": [...]} JSON
+    document - the same shape as the tool schema the model must
+    answer with. On retries Claude then echoed that document back
+    as a JSON *string* inside the `changes` field instead of
+    filling it with a list (seen in production traces, and
+    reproduced on the exact failing prompt). Plain blocks remove
+    that look-alike, and skip JSON-escaping all the source code.
+    """
+
+    blocks = []
+
+    for change in previous_code_changes.get("changes", []):
+        content = change.get("content")
+
+        blocks.append(
+            f"===== FILE: {change.get('file')} =====\n"
+            f"ACTION: {change.get('action')}\n"
+            f"REASON: {change.get('reason')}\n"
+            f"----- CONTENT -----\n"
+            f"{content if content is not None else '(file deleted)'}\n"
+            f"===== END FILE ====="
+        )
+
+    return "\n\n".join(blocks)
+
+
+def _parse_structured_output(
+    output: dict,
+) -> CodeChangeResponse:
+    parsed = output.get("parsed")
+
+    if isinstance(parsed, CodeChangeResponse):
+        return parsed
+
+    raise ValueError(
+        "Coding Agent returned an invalid response: "
+        f"{output.get('parsing_error')}"
+    )
+
+
+def _loads_lenient(text: str):
+    """
+    json.loads() with fallbacks for the ways the model mangles a
+    JSON string that holds source code: a Markdown fence around it,
+    invalid backslash escapes (regexes, Windows paths, JSX), or
+    trailing text after the document. Returns None if unrecoverable.
+    """
+
+    candidate = text.strip()
+
+    if candidate.startswith("```"):
+        candidate = candidate.split("\n", 1)[-1]
+        candidate = candidate.rsplit("```", 1)[0].strip()
+
+    attempts = [
+        candidate,
+        re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", candidate),
+    ]
+
+    last_error = None
+
+    for attempt in attempts:
+        try:
+            return json.loads(attempt, strict=False)
+
+        except json.JSONDecodeError as error:
+            last_error = error
+
+        try:
+            value, _ = json.JSONDecoder(strict=False).raw_decode(
+                attempt.lstrip()
+            )
+            return value
+
+        except json.JSONDecodeError as error:
+            last_error = error
+
+    print(
+        "Coding Agent `changes` string is not recoverable JSON: "
+        f"{last_error}"
+    )
+
+    return None
+
+
+def _decode_string_changes(message):
+    """
+    Claude sometimes fills the tool's `changes` argument with the
+    whole document as a JSON string - a bare list or
+    {"changes": [...]} - which fails list validation even though
+    every change in it is fine. Decode it in place so a complete
+    (and ~$0.35) generation isn't discarded.
+
+    Anything that isn't that shape is left untouched and fails
+    validation loudly downstream.
+    """
+
+    for call in getattr(message, "tool_calls", None) or []:
+        args = call.get("args") or {}
+        changes = args.get("changes")
+
+        if not isinstance(changes, str):
+            continue
+
+        decoded = _loads_lenient(changes)
+
+        if isinstance(decoded, dict):
+            decoded = decoded.get("changes")
+
+        if not isinstance(decoded, list):
+            continue
+
+        args["changes"] = decoded
+
+        print(
+            "Coding Agent passed `changes` as a JSON string "
+            "instead of a list; decoded it."
+        )
+
+    return message
+
+
+def _to_structured_output(message) -> dict:
+    """
+    Mirror with_structured_output(include_raw=True): never raise,
+    so a malformed tool call surfaces as a clear ValueError from
+    _parse_structured_output instead of inside the chain.
+    """
+
+    calls = getattr(message, "tool_calls", None) or []
+
+    if not calls:
+        return {
+            "raw": message,
+            "parsed": None,
+            "parsing_error": "model made no tool call",
+        }
+
+    try:
+        return {
+            "raw": message,
+            "parsed": CodeChangeResponse(**calls[0]["args"]),
+            "parsing_error": None,
+        }
+
+    except ValidationError as error:
+        return {
+            "raw": message,
+            "parsed": None,
+            "parsing_error": error,
+        }
 
 
 def _validate_code_changes(

@@ -1,22 +1,67 @@
 import json
 
+from langfuse import observe, get_client
+
 from src.llm.factory import get_llm
+from src.services.observability import get_langchain_callbacks
 from src.utils.llm_json import (
     strip_markdown_json_fence,
 )
 
 
+@observe(as_type="agent", name="verification-agent")
 def verify_implementation(
     ticket: dict,
     implementation_plan: dict,
     code_changes: dict,
+    design_reference: dict | None = None,
 ) -> dict:
     """
     Verify whether the generated code satisfies
     the story ticket and acceptance criteria.
     """
 
+    # Override the default @observe input: code_changes carries
+    # full generated file content, which belongs in the output of
+    # the Coding Agent's own span, not duplicated across every
+    # span that happens to receive it as an argument.
+    get_client().update_current_span(
+        input={
+            "ticket_id": ticket.get("id"),
+            "ticket_title": ticket.get("title"),
+            "acceptance_criteria": ticket.get(
+                "acceptance_criteria"
+            ),
+            "changed_files": [
+                change.get("file")
+                for change in code_changes.get(
+                    "changes", []
+                )
+            ],
+        }
+    )
+
     llm = get_llm()
+
+    design_context = ""
+
+    if design_reference and design_reference.get("style_tokens"):
+        design_context = f"""
+DESIGN REFERENCE - EXACT STYLE VALUES (authoritative):
+
+{design_reference["style_tokens"]}
+
+When an acceptance criterion requires matching the design,
+check the hex colors, fonts, sizes and radii in the GENERATED
+CODE against these values (e.g. a CSS variable or rule that
+holds #33A533 satisfies a "green #33A533" requirement).
+Adding or changing CSS variables to hold these design values
+is REQUIRED, not an unnecessary change, and does not violate
+the plan's advice to reuse existing variables. Do not fail a
+criterion only because you cannot see the design image; judge
+it from these values. Fail it only when the code uses a
+different color/value than listed for that element.
+"""
 
     prompt = f"""
 You are a senior software engineer performing a
@@ -55,11 +100,23 @@ IMPORTANT RULES:
 10. Do NOT generate code.
 11. Return ONLY valid JSON.
 12. Do not use Markdown code fences.
+13. Fail a criterion only on CONCRETE evidence in the
+    GENERATED CODE CHANGES that it is not met. Do not fail
+    it because of something that "may", "might" or "could"
+    be wrong in files you were not shown (existing CSS, other
+    components): you only see the changed files, so
+    unverifiable risk is not a failure.
+14. The implementation plan describes ONE way to reach the
+    goal. If the code meets the acceptance criterion by a
+    different technique (e.g. a class toggle instead of
+    position:fixed), that is a PASS. Fail for a plan deviation
+    only when it breaks a criterion or the existing
+    functionality.
 
 STORY / TICKET:
 
 {json.dumps(ticket, indent=2)}
-
+{design_context}
 IMPLEMENTATION PLAN:
 
 {json.dumps(implementation_plan, indent=2)}
@@ -116,7 +173,12 @@ implementation problems.
 Otherwise return FAIL.
 """
 
-    response = llm.invoke(prompt)
+    response = llm.invoke(
+        prompt,
+        config={
+            "callbacks": get_langchain_callbacks(),
+        },
+    )
 
     content = response.content
 
@@ -127,8 +189,25 @@ Otherwise return FAIL.
 
     content = strip_markdown_json_fence(content)
 
+    if not content:
+        raise ValueError(
+            "Verification Agent returned a response that was "
+            "only a Markdown code fence with nothing inside "
+            "it (likely truncated mid-generation). "
+            f"stop_reason="
+            f"{response.response_metadata.get('stop_reason')} "
+            f"usage={response.response_metadata.get('usage')}"
+        )
+
     try:
-        result = json.loads(content)
+        # strict=False: tolerate raw control characters (e.g.
+        # an unescaped newline) inside a JSON string value,
+        # which standard JSON forbids but LLM output routinely
+        # contains when a string field holds multi-line text.
+        result = json.loads(
+            content,
+            strict=False,
+        )
 
     except json.JSONDecodeError as error:
         raise ValueError(

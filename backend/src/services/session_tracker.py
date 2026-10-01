@@ -18,6 +18,7 @@ NODE_STAGE = {
     "ensure_code_graph": "Plan",
     "find_relevant_files": "Plan",
     "read_relevant_files": "Plan",
+    "resolve_design_reference": "Plan",
     "create_plan": "Plan",
     "generate_code": "Code",
     "quality_gate": "Code",
@@ -32,6 +33,7 @@ NODE_STAGE = {
     "run_tests": "Test",
     "refresh_workspace_after_test_failure": "Test",
     "tests_passed": "Test",
+    "design_review": "Test",
     "tests_failed": "Test",
     "escalate_test_failure": "Test",
     "create_git_branch": "Build",
@@ -59,6 +61,7 @@ NODE_LABEL = {
     "ensure_code_graph": "Building code graph",
     "find_relevant_files": "Finding relevant files",
     "read_relevant_files": "Reading files",
+    "resolve_design_reference": "Reading design reference",
     "create_plan": "Planning",
     "generate_code": "Coding",
     "quality_gate": "Running quality checks",
@@ -70,6 +73,7 @@ NODE_LABEL = {
     "run_tests": "Running tests",
     "refresh_workspace_after_test_failure": "Coding",
     "tests_passed": "Tests passed",
+    "design_review": "Reviewing design",
     "tests_failed": "Tests failed",
     "create_git_branch": "Creating branch",
     "apply_workspace": "Building",
@@ -108,9 +112,93 @@ def start_session(ticket_id: str, title: str) -> str:
             "done": False,
             "error": None,
             "result": None,
+            # node name -> accumulated usage; flattened into
+            # `token_usage` by get_session().
+            "_usage": {},
         }
 
     return session_id
+
+
+def add_usage(
+    ticket_id: str,
+    node_name: str,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int = 0,
+    model: str | None = None,
+) -> None:
+    with _lock:
+        session = _sessions.get(ticket_id)
+
+        if session is None:
+            return
+
+        entry = session["_usage"].setdefault(
+            node_name,
+            {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cache_read_tokens": 0,
+                "calls": 0,
+                "models": [],
+            },
+        )
+
+        if model and model not in entry["models"]:
+            entry["models"].append(model)
+
+        entry["input_tokens"] += input_tokens
+        entry["output_tokens"] += output_tokens
+        entry["cache_read_tokens"] += cache_read_tokens
+        entry["calls"] += 1
+        session["updated_at"] = _now()
+
+
+def _summarize_usage(usage: dict[str, dict]) -> dict:
+    stage_totals = {
+        name: {
+            "name": name,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "calls": 0,
+        }
+        for name in STAGE_ORDER
+    }
+
+    steps = []
+
+    for node, entry in usage.items():
+        stage = NODE_STAGE.get(node)
+
+        if stage:
+            total = stage_totals[stage]
+            total["input_tokens"] += entry["input_tokens"]
+            total["output_tokens"] += entry["output_tokens"]
+            total["calls"] += entry["calls"]
+
+        steps.append(
+            {
+                "node": node,
+                "label": NODE_LABEL.get(node, node),
+                "stage": stage,
+                **entry,
+            }
+        )
+
+    return {
+        "input_tokens": sum(s["input_tokens"] for s in steps),
+        "output_tokens": sum(s["output_tokens"] for s in steps),
+        "cache_read_tokens": sum(
+            s["cache_read_tokens"] for s in steps
+        ),
+        "calls": sum(s["calls"] for s in steps),
+        "models": sorted(
+            {m for s in steps for m in s["models"]}
+        ),
+        "stages": list(stage_totals.values()),
+        "steps": steps,
+    }
 
 
 def record_node(ticket_id: str, node_name: str, delta: dict) -> None:
@@ -225,14 +313,20 @@ def get_session(ticket_id: str) -> dict | None:
     with _lock:
         session = _sessions.get(ticket_id)
 
-        return (
-            None
-            if session is None
-            else {
-                **session,
-                "stages": [
-                    dict(stage)
-                    for stage in session["stages"]
-                ],
-            }
-        )
+        if session is None:
+            return None
+
+        return {
+            **{
+                key: value
+                for key, value in session.items()
+                if key != "_usage"
+            },
+            "stages": [
+                dict(stage)
+                for stage in session["stages"]
+            ],
+            "token_usage": _summarize_usage(
+                session["_usage"]
+            ),
+        }

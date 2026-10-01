@@ -277,3 +277,78 @@
     transform: rotate(360deg);
   }
 }
+
+.token-usage {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.token-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.token-summary span,
+.token-empty {
+  color: #6b7280;
+}
+
+.token-empty {
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+
+.token-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.token-table th,
+.token-table td {
+  padding: 4px 8px;
+  text-align: right;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.token-table th:first-child,
+.token-table td:first-child {
+  text-align: left;
+}
+
+.token-table th {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.token-stage-row td:first-child {
+  font-weight: 600;
+}
+
+.token-details {
+  margin-top: 8px;
+}
+
+.token-details summary {
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.token-stage-tag {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.token-summary .token-model {
+  padding: 0 8px;
+  border-radius: 8px;
+  background: #e8f2ff;
+  color: #054eba;
+  font-weight: 600;
+}

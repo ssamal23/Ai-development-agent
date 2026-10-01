@@ -1,16 +1,33 @@
 import json
 
+from langfuse import observe, get_client
+
 from src.llm.factory import get_llm
+from src.services.observability import get_langchain_callbacks
 from src.utils.llm_json import (
     strip_markdown_json_fence,
 )
 
 
+@observe(as_type="agent", name="planning-agent")
 def create_implementation_plan(
     ticket: dict,
     repository_structure: list[str],
     relevant_files: list[dict],
+    design_reference: dict | None = None,
 ) -> dict:
+    # Override the default @observe input (which would otherwise
+    # be every function arg - full file contents, a base64 design
+    # image, all of it) with just what a reviewer actually needs
+    # to see at a glance.
+    get_client().update_current_span(
+        input={
+            "ticket_id": ticket.get("id"),
+            "ticket_title": ticket.get("title"),
+            "relevant_file_count": len(relevant_files),
+            "has_design_reference": bool(design_reference),
+        }
+    )
     """
     Create an implementation plan based on:
 
@@ -56,6 +73,61 @@ CONTENT:
     )
 
     # =========================================================
+    # Design reference (optional)
+    # =========================================================
+
+    design_reference_context = ""
+
+    if design_reference:
+
+        if design_reference.get("image_base64"):
+            style_tokens_block = (
+                "EXACT STYLE VALUES FROM THE DESIGN:\n"
+                f"{design_reference['style_tokens']}\n"
+                if design_reference.get("style_tokens")
+                else ""
+            )
+
+            design_reference_context = f"""
+============================================================
+DESIGN REFERENCE
+============================================================
+
+A design reference was provided for this ticket:
+{design_reference.get("label")}
+({design_reference.get("url")})
+
+The Coding Agent will be shown this design as an
+image together with its exact style values. The
+implementation must visually match it: layout,
+structure, colors, fonts, font sizes and corner radii.
+
+{style_tokens_block}
+These design values are NOT "arbitrary" - they override
+the rules above that say not to introduce new colors,
+fonts or variables. The plan must tell the Coding Agent
+to apply the design's exact hex colors, either by
+changing the value of an existing CSS variable that
+plays the same role, or by adding a new variable that
+holds the design value when no existing variable has that
+role. Existing class names, variable names, file structure
+and conventions are still reused.
+"""
+
+        elif design_reference.get("error"):
+            design_reference_context = f"""
+============================================================
+DESIGN REFERENCE
+============================================================
+
+A design reference was provided
+({design_reference.get("url")}) but could not be
+loaded: {design_reference.get("error")}
+
+Proceed using the ticket's own text description.
+"""
+
+    # =========================================================
     # Planning prompt
     # =========================================================
 
@@ -96,7 +168,7 @@ ACTUAL RELEVANT FILE CONTENT
 ============================================================
 
 {file_context}
-
+{design_reference_context}
 ============================================================
 ARCHITECTURAL RULES
 ============================================================
@@ -876,7 +948,12 @@ Return ONLY the JSON object.
     # Call LLM
     # =========================================================
 
-    response = llm.invoke(prompt)
+    response = llm.invoke(
+        prompt,
+        config={
+            "callbacks": get_langchain_callbacks(),
+        },
+    )
 
     content = response.content
 
@@ -897,12 +974,29 @@ Return ONLY the JSON object.
 
     content = strip_markdown_json_fence(content)
 
+    if not content:
+        raise ValueError(
+            "Planning Agent returned a response that was "
+            "only a Markdown code fence with nothing inside "
+            "it (likely truncated mid-generation). "
+            f"stop_reason="
+            f"{response.response_metadata.get('stop_reason')} "
+            f"usage={response.response_metadata.get('usage')}"
+        )
+
     # =========================================================
     # Parse JSON
     # =========================================================
 
     try:
-        plan = json.loads(content)
+        # strict=False: tolerate raw control characters (e.g.
+        # an unescaped newline) inside a JSON string value,
+        # which standard JSON forbids but LLM output routinely
+        # contains when a string field holds multi-line text.
+        plan = json.loads(
+            content,
+            strict=False,
+        )
 
     except json.JSONDecodeError as error:
 

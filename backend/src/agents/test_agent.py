@@ -2,6 +2,8 @@ from pathlib import Path
 import json
 import subprocess
 
+from langfuse import observe
+
 from src.config.settings import settings
 
 
@@ -261,6 +263,7 @@ class TestAgent:
         )
 
 
+@observe(as_type="tool", name="test-agent")
 def run_tests(
     repository_path: str | Path | None = None,
 ) -> dict:

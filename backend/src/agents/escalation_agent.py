@@ -1,7 +1,12 @@
 import json
+
+from langfuse import observe, get_client
+
 from src.llm.factory import get_llm
+from src.services.observability import get_langchain_callbacks
 
 
+@observe(as_type="agent", name="escalation-agent")
 def generate_escalation_pr(
     ticket: dict,
     failure_type: str,
@@ -10,6 +15,13 @@ def generate_escalation_pr(
     code_changes: dict | None = None,
     attempts: int = 0,
 ) -> dict:
+    get_client().update_current_span(
+        input={
+            "ticket_id": ticket.get("id"),
+            "failure_type": failure_type,
+            "attempts": attempts,
+        }
+    )
     """
     Generate a draft PR with failure analysis when max retries exceeded.
 
@@ -116,7 +128,12 @@ Generate a professional PR body in Markdown format that:
 Return ONLY the Markdown content, no explanations outside of it.
 """
 
-    response = llm.invoke(prompt)
+    response = llm.invoke(
+        prompt,
+        config={
+            "callbacks": get_langchain_callbacks(),
+        },
+    )
 
     content = response.content
 
@@ -145,6 +162,7 @@ Return ONLY the Markdown content, no explanations outside of it.
     }
 
 
+@observe(as_type="tool", name="failure-report")
 def create_failure_report(
     ticket: dict,
     failure_type: str,

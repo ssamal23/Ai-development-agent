@@ -8,6 +8,10 @@ export interface Ticket {
   state?: string
   priority?: string
   assignee?: string
+  /** A Figma frame link ("Copy link to selection") or a plain web page URL to match. */
+  design_reference?: string
+  /** A directly pasted/uploaded design image: a data URL (data:image/png;base64,...) or bare base64. */
+  design_reference_image?: string
 }
 
 export type BoardProvider = 'none' | 'azure_boards' | 'jira' | 'github_issues'
@@ -165,6 +169,34 @@ export interface TicketSessionStage {
   status: StageStatus
 }
 
+export interface TokenUsageStage {
+  name: string
+  input_tokens: number
+  output_tokens: number
+  calls: number
+}
+
+export interface TokenUsageStep {
+  node: string
+  label: string
+  stage: string | null
+  input_tokens: number
+  output_tokens: number
+  cache_read_tokens: number
+  calls: number
+  models: string[]
+}
+
+export interface TokenUsage {
+  input_tokens: number
+  output_tokens: number
+  cache_read_tokens: number
+  calls: number
+  models: string[]
+  stages: TokenUsageStage[]
+  steps: TokenUsageStep[]
+}
+
 export interface TicketSession {
   session_id: string
   ticket_id: string
@@ -176,6 +208,7 @@ export interface TicketSession {
   done: boolean
   error: string | null
   result: AnalyzeTicketResult | null
+  token_usage?: TokenUsage
 }
 
 /**
